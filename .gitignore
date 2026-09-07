@@ -1,0 +1,4 @@
+.share/
+.env
+node_modules/
+.playwright-mcp/

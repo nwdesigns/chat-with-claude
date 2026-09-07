@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Chat with Claude · nwdesigns</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap"
+    />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div id="login" class="screen">
+      <form id="login-form" class="card">
+        <img
+          class="logo"
+          src="/logo.svg"
+          alt="nwdesigns"
+          width="50"
+          height="38"
+        />
+        <p class="label">nwdesigns</p>
+        <h1>Chat with Claude</h1>
+        <p class="muted">Enter the one-time password from the session owner.</p>
+        <input
+          id="name"
+          type="text"
+          autocomplete="nickname"
+          placeholder="Your name"
+          maxlength="40"
+          autofocus
+          required
+        />
+        <input
+          id="password"
+          type="password"
+          autocomplete="off"
+          placeholder="Password"
+          required
+        />
+        <button type="submit">Enter</button>
+        <p id="login-error" class="error" hidden></p>
+      </form>
+    </div>
+
+    <div id="chat" class="screen" hidden>
+      <header>
+        <img
+          class="logo"
+          src="/logo.svg"
+          alt="nwdesigns"
+          width="30"
+          height="23"
+        />
+        <strong>Claude</strong>
+        <span id="meta" class="muted"></span>
+        <span id="status" class="pill">idle</span>
+      </header>
+      <main id="messages"></main>
+      <form id="composer">
+        <div id="attach-list"></div>
+        <div class="row">
+          <label class="icon-btn" title="Attach files">
+            <input id="file-input" type="file" multiple hidden />
+            📎
+          </label>
+          <textarea
+            id="text"
+            rows="1"
+            placeholder="Message… (Enter to send, Shift+Enter for newline)"
+          ></textarea>
+          <button id="send" type="submit">Send</button>
+        </div>
+        <p id="drop-hint" class="muted">
+          Drop files anywhere. Images are shown to Claude, other files are saved
+          and read with tools. Max 200 MB each.
+        </p>
+      </form>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
