@@ -28,12 +28,18 @@ nohup bun run /Users/disconnesso/Documents/Projects/chat-with-claude/src/cli.ts 
 ```
 URL:      https://xxxx.trycloudflare.com
 Password: abcd1234
-Mode:     forked session (or LIVE — writes into this session)
+Session:  <one of the three lines below>
 Chat:     shared (everyone sees the same chat) or private (one chat per login)
 CAUTION:  anyone with the password has the same tool access as this session.
 ```
 
-Each participant types a name at login. Take `mode` from the JSON line for the Chat row.
+Session line, from the JSON fields `live`, `mode` and `session`:
+
+- `live: false, mode: global` → `FORK of <session> — the web chat gets its own session id at its first message; this interactive session is not modified.`
+- `live: false, mode: private` → `FORK per login of <session> — each participant gets their own session id; this interactive session is not modified.`
+- `live: true` → `LIVE — the web chat writes into this session <session>; messages from the web interleave with yours.`
+
+Each participant types a name at login. To see the session ids the web chat created, run `bun run /Users/disconnesso/Documents/Projects/chat-with-claude/src/cli.ts status --cwd "$CWD"`: `chatSessionId` is the shared chat's fork, `rooms` maps each private login to its fork. Any of them can be reopened later with `claude --resume <id>` from `$CWD`.
 
 4. Do not store the password anywhere. It exists only in the log line and the user's terminal. Delete `.share/start.log` after printing.
 

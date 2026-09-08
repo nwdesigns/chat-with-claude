@@ -12,6 +12,11 @@ export type ShareState = {
   live: boolean;
   /** global = everyone shares one chat; private = one chat (and one fork) per login. */
   mode: "global" | "private";
+  /**
+   * Private mode: one entry per login, keyed by the participant's short id.
+   * Lets the owner find and resume a co-worker's fork later: `claude --resume <chatSessionId>`.
+   */
+  rooms?: Record<string, { name: string; chatSessionId: string | null }>;
   passwordHash: string;
   startedAt: string;
 };

@@ -135,7 +135,9 @@ if (cmd === "start") {
       port: s.port,
       live: s.live,
       mode: s.mode ?? "global",
+      sourceSessionId: s.sourceSessionId,
       chatSessionId: s.chatSessionId,
+      rooms: s.rooms ?? {},
       startedAt: s.startedAt,
     }),
   );

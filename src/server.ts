@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 import { Auth, type Participant } from "./auth";
 import { runTurn, type ImageAttachment, type TurnEvent } from "./claude";
 import { readState, writeState, shareDir, type ShareState } from "./state";
+import { transcribe, AUDIO_TYPES, AUDIO_EXT } from "./transcribe";
 
 const IMAGE_TYPES = new Set([
   "image/png",
@@ -202,6 +203,7 @@ export function startServer(o: ServerOptions) {
           );
           const images: ImageAttachment[] = [];
           const files: string[] = [];
+          const voices: string[] = []; // transcripts of recorded voice notes
           try {
             if (uploads.length) await mkdir(dir, { recursive: true });
             for (const f of uploads) {
@@ -213,6 +215,12 @@ export function startServer(o: ServerOptions) {
                   mediaType: f.type,
                   base64: Buffer.from(await f.arrayBuffer()).toString("base64"),
                 });
+              } else if (
+                f.name.startsWith("voice-") &&
+                (AUDIO_TYPES.test(f.type) || AUDIO_EXT.test(f.name))
+              ) {
+                // Recorded in the browser: transcribe here so Claude gets text, not a file.
+                voices.push(await transcribe(path));
               } else {
                 files.push(path);
               }
@@ -225,12 +233,19 @@ export function startServer(o: ServerOptions) {
             );
           }
 
+          const voice = voices.join(" ");
           room.emit({
             type: "user",
-            text: text || "(attachments only)",
-            attachments: uploads.map((f) => f.name),
+            text: text || voice || "(attachments only)",
+            attachments:
+              files.length || images.length
+                ? uploads
+                    .filter((f) => !f.name.startsWith("voice-"))
+                    .map((f) => f.name)
+                : [],
             name: who.name,
             id: who.id,
+            voice: voice || undefined,
           });
           (async () => {
             try {
@@ -251,7 +266,11 @@ export function startServer(o: ServerOptions) {
               const sessionId = exists ? wanted : null;
               const fork = !o.state.live && !room.chatSessionId;
               // In the shared chat Claude sees who wrote each message.
-              const prompt = text || "See the attached files.";
+              let prompt = text || (voice ? "" : "See the attached files.");
+              if (voice)
+                prompt =
+                  (prompt ? prompt + "\n\n" : "") +
+                  `Voice message (transcribed): ${voice}`;
               const spoken =
                 mode === "global" ? `${who.name}: ${prompt}` : prompt;
               for await (const ev of runTurn(spoken, {
@@ -270,10 +289,17 @@ export function startServer(o: ServerOptions) {
                 ) {
                   if (ev.sessionId && ev.sessionId !== room.chatSessionId) {
                     room.chatSessionId = ev.sessionId;
-                    if (room.id === "global") {
+                    // Persist so the owner can see (status) and resume every fork later.
+                    if (room.id === "global")
                       o.state.chatSessionId = ev.sessionId;
-                      await writeState(o.cwd, o.state);
+                    else {
+                      o.state.rooms ??= {};
+                      o.state.rooms[who.id] = {
+                        name: who.name,
+                        chatSessionId: ev.sessionId,
+                      };
                     }
+                    await writeState(o.cwd, o.state);
                   }
                 }
                 room.emit(ev);

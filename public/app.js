@@ -86,6 +86,12 @@ function handle(ev) {
         who.textContent = ev.name;
         el.appendChild(who);
       }
+      if (ev.voice) {
+        const v = document.createElement("div");
+        v.className = "voice";
+        v.textContent = "🎤 voice message";
+        el.appendChild(v);
+      }
       el.appendChild(document.createTextNode(ev.text));
       if (ev.attachments?.length) {
         const a = document.createElement("div");
@@ -212,7 +218,9 @@ function renderAttachList() {
   pending.forEach((f, i) => {
     const chip = document.createElement("span");
     chip.className = "chip";
-    chip.textContent = `${f.name} (${(f.size / 1048576).toFixed(1)} MB) ✕`;
+    chip.textContent = f.voiceSeconds
+      ? `🎤 voice message ${f.voiceSeconds}s ✕`
+      : `${f.name} (${(f.size / 1048576).toFixed(1)} MB) ✕`;
     chip.onclick = () => {
       pending.splice(i, 1);
       renderAttachList();
@@ -251,6 +259,67 @@ document.addEventListener("paste", (e) => {
   if (fs.length) addFiles(fs);
 });
 
+// Voice messages: MediaRecorder → one audio file named voice-*.<ext>. The server
+// transcribes files with that prefix and sends Claude the text.
+const micBtn = $("#mic");
+let recorder = null,
+  recStart = 0,
+  recTimer = null;
+async function startRecording() {
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+    alert("This browser cannot record audio.");
+    return;
+  }
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch {
+    alert("Microphone access was denied.");
+    return;
+  }
+  const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find((m) =>
+    MediaRecorder.isTypeSupported(m),
+  );
+  recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+  const chunks = [];
+  recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  recorder.onstop = () => {
+    stream.getTracks().forEach((t) => t.stop());
+    const type = recorder.mimeType || "audio/webm";
+    const ext = type.includes("mp4")
+      ? "m4a"
+      : type.includes("ogg")
+        ? "ogg"
+        : "webm";
+    const secs = Math.round((Date.now() - recStart) / 1000);
+    const file = new File(chunks, `voice-${Date.now()}.${ext}`, { type });
+    if (secs < 1 || file.size === 0) return; // a tap, not a message
+    file.voiceSeconds = secs;
+    addFiles([file]);
+  };
+  recorder.start();
+  recStart = Date.now();
+  micBtn.classList.add("recording");
+  micBtn.setAttribute("aria-pressed", "true");
+  micBtn.textContent = "0:00";
+  recTimer = setInterval(() => {
+    const s = Math.round((Date.now() - recStart) / 1000);
+    micBtn.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  }, 1000);
+}
+function stopRecording() {
+  clearInterval(recTimer);
+  micBtn.classList.remove("recording");
+  micBtn.setAttribute("aria-pressed", "false");
+  micBtn.textContent = "🎤";
+  if (recorder && recorder.state !== "inactive") recorder.stop();
+  recorder = null;
+}
+micBtn.addEventListener("click", () => {
+  if (recorder) stopRecording();
+  else startRecording();
+});
+
 textEl.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
@@ -265,13 +334,18 @@ textEl.addEventListener("input", () => {
 $("#composer").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (busy) return;
+  if (recorder) stopRecording(); // a click on Send while recording ends the recording; send again
   const text = textEl.value.trim();
   if (!text && pending.length === 0) return;
   const fd = new FormData();
   fd.append("text", text);
   for (const f of pending) fd.append("files", f, f.name);
   sendBtn.disabled = true;
-  status.textContent = pending.length ? "uploading" : "sending";
+  status.textContent = pending.some((f) => f.voiceSeconds)
+    ? "transcribing"
+    : pending.length
+      ? "uploading"
+      : "sending";
   const r = await fetch("/api/send", { method: "POST", body: fd });
   if (!r.ok) {
     const j = await r.json().catch(() => ({}));

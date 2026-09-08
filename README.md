@@ -11,7 +11,8 @@ password over a private channel and run `/unshare` when done.
 ## Install
 
 Requires [Bun](https://bun.sh), `cloudflared` (`brew install cloudflared`) and a
-logged-in Claude Code CLI.
+logged-in Claude Code CLI. Voice messages also need `ffmpeg` and `whisper-cpp`
+(`brew install ffmpeg whisper-cpp`, then `whisper-cli --download-model small`).
 
 ```bash
 git clone git@github.com:nwdesigns/chat-with-claude.git
@@ -46,10 +47,35 @@ is writing. `--live` and `--private` cannot be combined.
 ```
 URL:      https://xxxx.trycloudflare.com
 Password: abcd1234
-Mode:     forked session (or LIVE)
+Session:  FORK of <id> — the web chat gets its own session id at its first message
 Chat:     shared (or private)
 CAUTION:  anyone with the password has the same tool access as this session.
 ```
+
+## Sessions: what talks to what
+
+| Share command       | Web chat writes to                                   | Your interactive session |
+| ------------------- | ---------------------------------------------------- | ------------------------ |
+| `/share`            | one fork of your session, shared by all participants | untouched                |
+| `/share --private`  | one fork per login                                   | untouched                |
+| `/share --live`     | your session itself                                  | gets the web messages    |
+
+A fork is a copy of your conversation so far. Claude in the web chat knows
+everything you discussed up to `/share`, but nothing you say afterwards, and
+you do not see the web messages in your terminal. The fork gets its own id at
+the web chat's first message. Later web turns resume that id, so the web chat
+keeps its own memory.
+
+Where the ids live, and how to reopen a chat later:
+
+```bash
+bun run src/cli.ts status --cwd <project dir>
+# {"sourceSessionId": "...", "chatSessionId": "<shared fork>", "rooms": {"5c218e89": {"name": "Anna", "chatSessionId": "<Anna's fork>"}}}
+claude --resume <id>     # from the same project dir
+```
+
+`/unshare` stops the server but keeps the transcripts under
+`~/.claude/projects/<slug>/`.
 
 A running share keeps its server process. After you update this repo, run
 `/unshare` and `/share` again to pick up server-side changes. The page files in
@@ -69,6 +95,13 @@ A running share keeps its server process. After you update this repo, run
   any time.
 - Files: drag and drop, paste, or the paperclip. Images go to Claude as image
   blocks, everything else is saved under `.share/uploads/` and read with tools.
+- Voice messages: the microphone button records until you press it again. The
+  recording is sent as a file named `voice-*.webm` (or `.m4a` on Safari). The
+  server converts it with `ffmpeg` and transcribes it with `whisper-cli`
+  (whisper.cpp, language auto-detected, model `~/.cache/whisper-cpp/ggml-small.bin`
+  or the bundled tiny model). Claude receives the transcript as text. The
+  bubble shows the transcript with a "voice message" label. Recording needs
+  HTTPS or localhost, so it works through the tunnel.
 - Reload keeps the chat: history is replayed from the server. A server restart
   logs everyone out.
 
@@ -113,7 +146,8 @@ Notes learned the hard way:
 
 Files: `src/cli.ts` (start/stop/status, tunnel, state), `src/server.ts`
 (routes, rooms, uploads), `src/claude.ts` (spawn and stream-json parsing),
-`src/auth.ts` (password, tokens, lockout), `src/tunnel.ts`, `src/state.ts`,
+`src/auth.ts` (password, tokens, lockout), `src/transcribe.ts` (voice notes),
+`src/tunnel.ts`, `src/state.ts`,
 `public/` (page), `skills/` (Claude Code skills to copy into `~/.claude/skills/`).
 
 ## Security

@@ -339,3 +339,27 @@ main {
     display: none;
   }
 }
+/* voice recording */
+#mic {
+  background: none;
+  color: var(--fg);
+  padding: 0.3rem;
+  border-radius: 50%;
+  line-height: 1;
+}
+#mic:hover:not(:disabled) {
+  background: var(--tool);
+  color: var(--fg);
+}
+#mic.recording {
+  background: var(--accent);
+  color: var(--accent-fg);
+  animation: pulse 1s infinite;
+}
+.msg.user .voice {
+  font: 700 11px var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 0.15rem;
+}

@@ -33,6 +33,8 @@ export type TurnEvent =
       attachments: string[];
       name?: string;
       id?: string;
+      /** Set when the message came from a recorded voice note: the transcript. */
+      voice?: string;
     }
   | { type: "done" };
 
