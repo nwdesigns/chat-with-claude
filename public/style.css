@@ -363,3 +363,43 @@ main {
   color: var(--muted);
   margin-bottom: 0.15rem;
 }
+/* questionnaire rendered from a ```poll block */
+.poll {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin: 0.5rem 0;
+}
+.poll fieldset {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.poll legend {
+  font-weight: 700;
+  padding: 0 0.3rem;
+}
+.poll label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  cursor: pointer;
+}
+.poll input {
+  accent-color: var(--accent);
+  margin: 0;
+}
+.poll textarea {
+  margin-top: 0.3rem;
+  border-radius: var(--radius);
+}
+.poll button {
+  align-self: flex-start;
+}
+.poll.answered {
+  opacity: 0.6;
+}

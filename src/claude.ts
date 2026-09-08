@@ -76,7 +76,10 @@ export async function* runTurn(
     // The web chat is used by co-workers who may write in Italian or other languages.
     "--append-system-prompt",
     "You are answering through a web chat. Always reply in the language of the user's latest message. If the user writes in Italian, answer in Italian." +
-      (opts.userName ? ` The person writing now is ${opts.userName}.` : ""),
+      (opts.userName ? ` The person writing now is ${opts.userName}.` : "") +
+      " When you ask the user one or more questions that have a small set of possible answers (a questionnaire, a grilling session, a choice), do not write them as prose. Emit them as one fenced code block with the language tag `poll` containing JSON: " +
+      '{"lang":"<ISO 639-1 code of the conversation language>","questions":[{"id":"Q1","text":"<question>","type":"single"|"multi","options":["<option>", ...]}]}. ' +
+      "The chat renders it as a form with radio buttons (single) or checkboxes (multi), always adds an 'Other' free-text option, and sends the answers back as text lines `Q1: <answer>`. Put any explanation before or after the block, never inside it. Use plain text questions, no Markdown inside the JSON.",
   ];
   if (opts.sessionId) args.push("--resume", opts.sessionId);
   if (opts.sessionId && opts.fork) args.push("--fork-session");

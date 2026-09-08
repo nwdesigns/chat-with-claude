@@ -27,6 +27,13 @@ Updated: 2026-09-07 11:15 CEST.
 - Verified: `scratchpad/modes.sh` (private isolation ANNA-OK/BOB-OK; shared chat "Teal, said by Anna."), Pi verification on port 7780.
 - The nwdesigns.it share on port 7778 kept running throughout (old server process, new static files, still compatible).
 
+## 2026-09-08: voice messages, session lineage, questionnaires
+- Git: github.com/nwdesigns/chat-with-claude, branch `main`. Skills are copied under `skills/` and must stay identical to `~/.claude/skills/{share,unshare}`.
+- Voice: mic button → MediaRecorder → `voice-*.webm|m4a` upload; `src/transcribe.ts` runs ffmpeg → whisper-cli (`~/.cache/whisper-cpp/ggml-small.bin`, fallback bundled tiny). Claude receives "Voice message (transcribed): …". Verified with jfk.wav. Browser recording itself not automated (Playwright has no mic); the page loads without errors.
+- Session lineage: `state.json.rooms` persists private forks per login id; `cli.ts status` prints sourceSessionId, chatSessionId, rooms. README table "Sessions: what talks to what"; skills print a Session line (FORK / FORK per login / LIVE) and /unshare reports the fork ids.
+- Questionnaires: system prompt tells Claude to emit ```poll JSON ({lang, questions[{id,text,type single|multi,options}]}); `app.js renderPolls()` turns it into a form with radios/checkboxes, an always-present Altro/Other with a conditional textarea, and one submit that posts `Qn: answer` lines. Verified in Italian, including a follow-up poll Claude produced unprompted.
+- README has a Dependencies table (Bun, Claude Code, cloudflared, ffmpeg, whisper-cpp, marked/DOMPurify).
+
 Verified today:
 - Text turn + image turn via `--input-format stream-json` (image block accepted, "Red").
 - Fork: first web turn uses `--fork-session`, later turns resume the forked id.

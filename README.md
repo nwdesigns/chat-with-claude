@@ -8,11 +8,24 @@ CAUTION: the chat runs with `--permission-mode bypassPermissions`. Anyone with
 the password can run any command on your machine as your user. Share the
 password over a private channel and run `/unshare` when done.
 
-## Install
+## Dependencies
 
-Requires [Bun](https://bun.sh), `cloudflared` (`brew install cloudflared`) and a
-logged-in Claude Code CLI. Voice messages also need `ffmpeg` and `whisper-cpp`
-(`brew install ffmpeg whisper-cpp`, then `whisper-cli --download-model small`).
+| Tool | Used for | Install |
+| --- | --- | --- |
+| [Bun](https://bun.sh) ≥ 1.1 | server, CLI, TypeScript | `brew install oven-sh/bun/bun` |
+| Claude Code CLI, logged in | `claude -p` per turn | `npm i -g @anthropic-ai/claude-code` |
+| `cloudflared` | quick tunnel `*.trycloudflare.com` | `brew install cloudflared` |
+| `ffmpeg` | voice messages: audio → 16 kHz wav | `brew install ffmpeg` |
+| `whisper-cpp` (`whisper-cli`) | voice messages: speech → text | `brew install whisper-cpp` then `whisper-cli --download-model small` |
+| `marked`, `DOMPurify` | Markdown in the page, loaded from cdnjs | none |
+
+Only Bun, Claude Code and `cloudflared` are required. Without `ffmpeg` and
+`whisper-cli` a voice message fails with a visible error and text chat keeps
+working. Model lookup order: `~/.cache/whisper-cpp/ggml-small.bin`,
+`ggml-base.bin`, then the tiny model bundled with Homebrew. Override binaries
+with the `FFMPEG` and `WHISPER_CLI` environment variables.
+
+## Install
 
 ```bash
 git clone git@github.com:nwdesigns/chat-with-claude.git
@@ -95,6 +108,12 @@ A running share keeps its server process. After you update this repo, run
   any time.
 - Files: drag and drop, paste, or the paperclip. Images go to Claude as image
   blocks, everything else is saved under `.share/uploads/` and read with tools.
+- Questionnaires: when Claude asks questions with a small set of answers (a
+  grilling session, a choice), it emits a ```` ```poll ```` block with JSON and the
+  page renders a form: radio buttons for single choice, checkboxes for multiple
+  choice, always an "Other" option that opens a text box. One "Send answers"
+  button posts `Q1: answer` lines back as a normal message. The instruction to
+  use this format is part of the system prompt in `src/claude.ts`.
 - Voice messages: the microphone button records until you press it again. The
   recording is sent as a file named `voice-*.webm` (or `.m4a` on Safari). The
   server converts it with `ffmpeg` and transcribes it with `whisper-cli`

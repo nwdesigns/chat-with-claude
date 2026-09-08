@@ -29,7 +29,102 @@ function setMarkdown(el, md) {
   const html = render(md);
   if (html !== null) el.innerHTML = html;
   else el.textContent = md;
+  renderPolls(el);
   messages.scrollTop = messages.scrollHeight;
+}
+
+// Claude emits questionnaires as ```poll JSON blocks (see the system prompt in
+// src/claude.ts). Replace each one with a form: radios or checkboxes per question,
+// always an "Other" option with a textarea, one submit that posts `Qn: answer` lines.
+const OTHER_LABEL = { en: "Other", it: "Altro" };
+function renderPolls(root) {
+  root.querySelectorAll("pre > code.language-poll").forEach((code) => {
+    let data;
+    try {
+      data = JSON.parse(code.textContent);
+    } catch {
+      return; // leave the raw block visible
+    }
+    const qs = Array.isArray(data?.questions) ? data.questions : [];
+    if (!qs.length) return;
+    // Claude declares the language in the JSON; fall back to a word check on the bubble.
+    const lang =
+      data.lang === "it" ||
+      (!data.lang &&
+        /\b(il|la|le|di|che|per|quali|quale|dove|sito)\b/i.test(
+          root.textContent,
+        ))
+        ? "it"
+        : "en";
+    const form = document.createElement("form");
+    form.className = "poll";
+    qs.forEach((q, qi) => {
+      const id = String(q.id || `Q${qi + 1}`);
+      const multi = q.type === "multi";
+      const fs = document.createElement("fieldset");
+      fs.dataset.id = id;
+      const lg = document.createElement("legend");
+      lg.textContent = `${id} · ${q.text || ""}`;
+      fs.appendChild(lg);
+      const opts = [
+        ...(Array.isArray(q.options) ? q.options : []).map(String),
+        "__other__",
+      ];
+      opts.forEach((opt) => {
+        const isOther = opt === "__other__";
+        const label = document.createElement("label");
+        const input = document.createElement("input");
+        input.type = multi ? "checkbox" : "radio";
+        input.name = `${id}`;
+        input.value = isOther ? "__other__" : opt;
+        label.append(input, " ", isOther ? OTHER_LABEL[lang] : opt);
+        fs.appendChild(label);
+        if (isOther) {
+          const ta = document.createElement("textarea");
+          ta.rows = 2;
+          ta.placeholder =
+            lang === "it" ? "Scrivi la tua risposta…" : "Write your answer…";
+          ta.hidden = true;
+          fs.appendChild(ta);
+          // The textarea opens only when "Other" is selected.
+          fs.addEventListener("change", () => {
+            const on = input.checked;
+            ta.hidden = !on;
+            if (on) ta.focus();
+          });
+        }
+      });
+      form.appendChild(fs);
+    });
+    const btn = document.createElement("button");
+    btn.type = "submit";
+    btn.textContent = lang === "it" ? "Invia risposte" : "Send answers";
+    form.appendChild(btn);
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (busy) return; // wait for the running turn, the form stays open
+      const lines = [];
+      form.querySelectorAll("fieldset").forEach((fs) => {
+        const picked = [...fs.querySelectorAll("input:checked")]
+          .map((i) =>
+            i.value === "__other__"
+              ? fs.querySelector("textarea").value.trim()
+              : i.value,
+          )
+          .filter(Boolean);
+        lines.push(
+          `${fs.dataset.id}: ${picked.length ? picked.join("; ") : "—"}`,
+        );
+      });
+      textEl.value = lines.join("\n");
+      $("#composer").requestSubmit();
+      form
+        .querySelectorAll("input, textarea, button")
+        .forEach((x) => (x.disabled = true));
+      form.classList.add("answered");
+    });
+    code.parentElement.replaceWith(form);
+  });
 }
 function setBusy(b) {
   busy = b;
