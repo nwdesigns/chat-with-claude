@@ -7,6 +7,8 @@ export type ShareState = {
   cwd: string;
   /** Interactive session id passed by /share. */
   sourceSessionId: string;
+  /** ListAgents name of the owner session (`--owner`). The chat messages it on handoff. */
+  ownerName?: string;
   /** Session the web chat writes to. Equals sourceSessionId in --live mode. */
   chatSessionId: string | null;
   live: boolean;

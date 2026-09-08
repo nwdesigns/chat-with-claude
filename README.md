@@ -55,6 +55,15 @@ Inside Claude Code:
 Each participant enters a name and the password at login. Claude is told who
 is writing. `--live` and `--private` cannot be combined.
 
+Handoff: `/share` passes the owner session's ListAgents name (`--owner`). When a
+participant writes "done", the chat writes
+`.claude/plans/handoff-<date>-share.md` in the project (answers, decisions, open
+points, changed files) and sends the owner session a message with the path and
+a short summary, through the cross-session `SendMessage` tool. Without
+`--owner` the file alone is the handoff. This is how answers from a fork reach
+your interactive session: `--live` appends web turns to your transcript file,
+but a running session never reads that file.
+
 `/share` prints:
 
 ```

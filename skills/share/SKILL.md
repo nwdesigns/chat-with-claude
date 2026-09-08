@@ -12,11 +12,11 @@ CAUTION: The web chat runs with `bypassPermissions`. A person with the password 
 
 ## Steps
 
-1. Run the start command in the background. Pass the current session id and the current working directory. Forward `--live`, `--private` and `--port` if given. `--live` and `--private` cannot be combined.
+1. Call the `ListAgents` tool once. Its first line reads `This session is <name> [ref]`. Keep `<name>` (without the bracket): it is `$OWNER`, the address the web chat uses to send its handoff back to this session. Then run the start command in the background. Pass the current session id, the owner name, and the current working directory. Forward `--live`, `--private` and `--port` if given. `--live` and `--private` cannot be combined.
 
 ```bash
 mkdir -p "$CWD/.share"
-nohup bun run /Users/disconnesso/Documents/Projects/chat-with-claude/src/cli.ts start --session "$CLAUDE_CODE_SESSION_ID" --cwd "$CWD" $ARGS > "$CWD/.share/start.log" 2>&1 &
+nohup bun run /Users/disconnesso/Documents/Projects/chat-with-claude/src/cli.ts start --session "$CLAUDE_CODE_SESSION_ID" --owner "$OWNER" --cwd "$CWD" $ARGS > "$CWD/.share/start.log" 2>&1 &
 ```
 
    `$CWD` is the project directory of the interactive session (the `Bash` tool's `pwd`), not the chat-with-claude project. Use the absolute path to `cli.ts` shown above. Do not copy the password to the clipboard.
@@ -38,6 +38,14 @@ Session line, from the JSON fields `live`, `mode` and `session`:
 - `live: false, mode: global` → `FORK of <session> — the web chat gets its own session id at its first message; this interactive session is not modified.`
 - `live: false, mode: private` → `FORK per login of <session> — each participant gets their own session id; this interactive session is not modified.`
 - `live: true` → `LIVE — the web chat writes into this session <session>; messages from the web interleave with yours.`
+
+Add one line after `Chat:`:
+
+```
+Handoff:  when a participant writes "done", the chat writes .claude/plans/handoff-<date>-share.md and messages this session (<owner name>).
+```
+
+Prefer the fork for grilling rounds. `--live` appends the web turns to this session's transcript file on disk, but this running session never reads them: the answers reach you only through the handoff.
 
 Each participant types a name at login. To see the session ids the web chat created, run `bun run /Users/disconnesso/Documents/Projects/chat-with-claude/src/cli.ts status --cwd "$CWD"`: `chatSessionId` is the shared chat's fork, `rooms` maps each private login to its fork. Any of them can be reopened later with `claude --resume <id>` from `$CWD`.
 

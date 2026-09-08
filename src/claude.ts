@@ -18,7 +18,25 @@ export type TurnOptions = {
   files?: string[];
   /** Display name of the person writing. Told to Claude in the system prompt. */
   userName?: string;
+  /**
+   * Name of the owner's interactive session as printed by ListAgents ("This session is <name>").
+   * When set, the chat sends its handoff there with SendMessage once a participant says "done".
+   */
+  ownerName?: string;
 };
+
+/** System prompt addition: how the chat hands its results back to the owner session. */
+function handoffInstruction(ownerName?: string): string {
+  return (
+    " Handoff: when a participant says the round is done (for example 'done', 'fatto', 'finito', 'abbiamo finito'), do this before you reply." +
+    " First, write the file `.claude/plans/handoff-<YYYY-MM-DD>-share.md` in the working directory (create the folder if needed; append if the file exists):" +
+    " every question asked in this chat with its answer and the name of who answered, every decision, every open point, and every file you changed." +
+    (ownerName
+      ? ` Second, send a message to the owner session named "${ownerName}" with the SendMessage tool (load its schema with ToolSearch first): the file path plus a summary of at most ten lines.` +
+        " Then tell the participant that the handoff reached the owner session."
+      : " No owner session name is known: the file is the handoff. Tell the participant the file path.")
+  );
+}
 
 export type TurnEvent =
   | { type: "init"; sessionId: string }
@@ -79,7 +97,8 @@ export async function* runTurn(
       (opts.userName ? ` The person writing now is ${opts.userName}.` : "") +
       " When you ask the user one or more questions that have a small set of possible answers (a questionnaire, a grilling session, a choice), do not write them as prose. Emit them as one fenced code block with the language tag `poll` containing JSON: " +
       '{"lang":"<ISO 639-1 code of the conversation language>","questions":[{"id":"Q1","text":"<question>","type":"single"|"multi","options":["<option>", ...]}]}. ' +
-      "The chat renders it as a form with radio buttons (single) or checkboxes (multi), always adds an 'Other' free-text option, and sends the answers back as text lines `Q1: <answer>`. Put any explanation before or after the block, never inside it. Use plain text questions, no Markdown inside the JSON.",
+      "The chat renders it as a form with radio buttons (single) or checkboxes (multi), always adds an 'Other' free-text option, and sends the answers back as text lines `Q1: <answer>`. Put any explanation before or after the block, never inside it. Use plain text questions, no Markdown inside the JSON." +
+      handoffInstruction(opts.ownerName),
   ];
   if (opts.sessionId) args.push("--resume", opts.sessionId);
   if (opts.sessionId && opts.fork) args.push("--fork-session");

@@ -50,3 +50,9 @@ Verified today:
 - Optional: `git init` + first commit.
 - Playwright screenshots `after-turn.png`, `mobile-after-login.png` in the project root: delete or gitignore.
 - `.share/` holds test scripts, probe files, and cloudflared logs. Safe to delete.
+
+## 2026-09-08: handoff from the fork to the owner session
+- Why: a `/share --live` round with Nilu (07 Sep) never reached the owner session. `claude -p` appends to the owner's transcript file, but a running interactive process does not read it. Verified: `claude -p` has ListAgents and SendMessage (deferred, load with ToolSearch); sessions are addressed by the ListAgents name, not by session id.
+- Change: `cli.ts start --owner NAME` → `state.ownerName` → `server.ts` passes `ownerName` to `runTurn` → `claude.ts handoffInstruction()` appended to the system prompt: on "done"/"fatto"/"finito" the chat writes `.claude/plans/handoff-<date>-share.md` and messages the owner session with the path and a ≤10-line summary. Without `--owner` the file alone is the handoff.
+- Skills (`skills/share` and `~/.claude/skills/share`, kept identical): step 1 calls ListAgents and passes `--owner "$OWNER"`; output gains a `Handoff:` line; note to prefer the fork over `--live` for grilling rounds. README "Use" documents it.
+- Not yet verified end to end: a fork sending SendMessage to the owner after "done". Running shares need `/unshare` + `/share` to pick it up.

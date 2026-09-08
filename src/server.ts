@@ -280,6 +280,7 @@ export function startServer(o: ServerOptions) {
                 images,
                 files,
                 userName: who.name,
+                ownerName: o.state.ownerName,
               })) {
                 // Adopt the session id from init and from a successful result only.
                 // A failed turn must not replace a working id.

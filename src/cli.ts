@@ -1,4 +1,4 @@
-// bun run src/cli.ts start --session <id> [--cwd DIR] [--live] [--private] [--port N]
+// bun run src/cli.ts start --session <id> [--owner NAME] [--cwd DIR] [--live] [--private] [--port N]
 // bun run src/cli.ts stop|status [--cwd DIR]
 import { mkdir, unlink } from "node:fs/promises";
 import { readdir, stat } from "node:fs/promises";
@@ -63,6 +63,8 @@ if (cmd === "start") {
     process.exit(1);
   }
   const port = Number(flag("--port") ?? 7777);
+  // Name printed by ListAgents in the owner session. Optional: without it the handoff is file-only.
+  const ownerName = flag("--owner");
   const live = has("--live");
   const mode = has("--private") ? "private" : "global";
   if (live && mode === "private") {
@@ -79,6 +81,7 @@ if (cmd === "start") {
     url: null,
     cwd,
     sourceSessionId: session,
+    ownerName,
     chatSessionId: live ? session : null,
     live,
     mode,
@@ -143,7 +146,7 @@ if (cmd === "start") {
   );
 } else {
   console.error(
-    "usage: cli.ts start|stop|status [--session ID] [--cwd DIR] [--live] [--private] [--port N]",
+    "usage: cli.ts start|stop|status [--session ID] [--owner NAME] [--cwd DIR] [--live] [--private] [--port N]",
   );
   process.exit(1);
 }
