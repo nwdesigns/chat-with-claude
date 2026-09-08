@@ -184,14 +184,14 @@ function handle(ev) {
       if (ev.voice) {
         const v = document.createElement("div");
         v.className = "voice";
-        v.textContent = "🎤 voice message";
+        v.textContent = "voice message";
         el.appendChild(v);
       }
       el.appendChild(document.createTextNode(ev.text));
       if (ev.attachments?.length) {
         const a = document.createElement("div");
         a.className = "attachments";
-        a.textContent = "📎 " + ev.attachments.join(", ");
+        a.textContent = "Attachments: " + ev.attachments.join(", ");
         el.appendChild(a);
       }
       assistantEl = null;
@@ -314,7 +314,7 @@ function renderAttachList() {
     const chip = document.createElement("span");
     chip.className = "chip";
     chip.textContent = f.voiceSeconds
-      ? `🎤 voice message ${f.voiceSeconds}s ✕`
+      ? `voice message ${f.voiceSeconds}s ✕`
       : `${f.name} (${(f.size / 1048576).toFixed(1)} MB) ✕`;
     chip.onclick = () => {
       pending.splice(i, 1);
@@ -375,12 +375,14 @@ async function startRecording() {
   const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find((m) =>
     MediaRecorder.isTypeSupported(m),
   );
-  recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+  // Keep a local handle: stopRecording() clears `recorder` before onstop fires.
+  const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+  recorder = rec;
   const chunks = [];
-  recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
-  recorder.onstop = () => {
+  rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  rec.onstop = () => {
     stream.getTracks().forEach((t) => t.stop());
-    const type = recorder.mimeType || "audio/webm";
+    const type = rec.mimeType || mime || "audio/webm";
     const ext = type.includes("mp4")
       ? "m4a"
       : type.includes("ogg")
@@ -388,25 +390,35 @@ async function startRecording() {
         : "webm";
     const secs = Math.round((Date.now() - recStart) / 1000);
     const file = new File(chunks, `voice-${Date.now()}.${ext}`, { type });
-    if (secs < 1 || file.size === 0) return; // a tap, not a message
+    if (secs < 1 || file.size === 0) {
+      status.textContent = "too short"; // a tap, not a message
+      return;
+    }
     file.voiceSeconds = secs;
     addFiles([file]);
   };
-  recorder.start();
+  rec.start();
   recStart = Date.now();
   micBtn.classList.add("recording");
   micBtn.setAttribute("aria-pressed", "true");
-  micBtn.textContent = "0:00";
+  micBtn.title = "Stop recording";
+  // While recording the icon gives way to a timer.
+  micBtn.querySelector(".mic-icon").hidden = true;
+  const time = micBtn.querySelector(".rec-time");
+  time.hidden = false;
+  time.textContent = "0:00";
   recTimer = setInterval(() => {
     const s = Math.round((Date.now() - recStart) / 1000);
-    micBtn.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    time.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
   }, 1000);
 }
 function stopRecording() {
   clearInterval(recTimer);
   micBtn.classList.remove("recording");
   micBtn.setAttribute("aria-pressed", "false");
-  micBtn.textContent = "🎤";
+  micBtn.title = "Record a voice message";
+  micBtn.querySelector(".mic-icon").hidden = false;
+  micBtn.querySelector(".rec-time").hidden = true;
   if (recorder && recorder.state !== "inactive") recorder.stop();
   recorder = null;
 }

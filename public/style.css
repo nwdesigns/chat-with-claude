@@ -343,9 +343,22 @@ main {
 #mic {
   background: none;
   color: var(--fg);
-  padding: 0.3rem;
+  padding: 0;
+  width: 2.4rem;
+  height: 2.4rem;
   border-radius: 50%;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+#mic .mic-icon {
+  display: block;
+}
+#mic .rec-time {
+  font: 700 12px var(--mono);
+  letter-spacing: 0.05em;
 }
 #mic:hover:not(:disabled) {
   background: var(--tool);
@@ -402,4 +415,28 @@ main {
 }
 .poll.answered {
   opacity: 0.6;
+}
+.icon-btn {
+  /* the paperclip label: same footprint as the mic button */
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: 50%;
+  color: var(--fg);
+}
+.icon-btn:hover {
+  background: var(--tool);
+}
+#mic.recording,
+#mic.recording:hover {
+  /* recording: red pill with the timer, wider than the icon circle */
+  background: var(--accent);
+  color: var(--accent-fg);
+  width: auto;
+  padding: 0 0.7rem;
+  border-radius: var(--pill);
 }

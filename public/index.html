@@ -67,16 +67,26 @@
       <form id="composer">
         <div id="attach-list"></div>
         <div class="row">
-          <label class="icon-btn" title="Attach files">
+          <label class="icon-btn" title="Attach files" aria-label="Attach files">
             <input id="file-input" type="file" multiple hidden />
-            📎
+            <svg class="clip-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 11.5 12.5 20a5.5 5.5 0 0 1-7.8-7.8l9-9a3.5 3.5 0 0 1 5 5l-9 9a1.5 1.5 0 0 1-2.1-2.1L16 6.7" />
+            </svg>
           </label>
           <textarea
             id="text"
             rows="1"
             placeholder="Message… (Enter to send, Shift+Enter for newline)"
           ></textarea>
-          <button id="mic" type="button" class="icon-btn" title="Record a voice message" aria-pressed="false">🎤</button>
+          <button id="mic" type="button" class="icon-btn" title="Record a voice message" aria-label="Record a voice message" aria-pressed="false">
+            <svg class="mic-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="3" width="6" height="11" rx="3" />
+              <path d="M5 11a7 7 0 0 0 14 0" />
+              <path d="M12 18v3" />
+              <path d="M8 21h8" />
+            </svg>
+            <span class="rec-time" hidden>0:00</span>
+          </button>
           <button id="send" type="submit">Send</button>
         </div>
         <p id="drop-hint" class="muted">
